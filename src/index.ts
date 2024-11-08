@@ -13,6 +13,12 @@
 
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
+			const query = 'INSERT INTO reviews (author, comment, rating, post_date) VALUES (?, ?, ?, ?) RETURNING *'
+			const postDate = (new Date()).toLocaleDateString();
+			const newReview = await env.MY_DB.prepare(query)
+				.bind('David', 'Good job', 4, postDate)
+				.first<ReviewRow>();
+			return new Response(JSON.stringify(newReview));
+
 	},
 } satisfies ExportedHandler<Env>;
