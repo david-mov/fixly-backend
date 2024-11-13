@@ -1,24 +1,34 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { Hono } from 'hono';
 
-export default {
-	async fetch(request, env, ctx): Promise<Response> {
-			const query = 'INSERT INTO reviews (author, comment, rating, post_date) VALUES (?, ?, ?, ?) RETURNING *'
-			const postDate = (new Date()).toLocaleDateString();
-			const newReview = await env.MY_DB.prepare(query)
-				.bind('David', 'Good job', 4, postDate)
-				.first<ReviewRow>();
-			return new Response(JSON.stringify(newReview));
+const api = new Hono<{ Bindings: Env }>();
+api
+  .get('/reviews', async (ctx) => {
+	try {
+		const query = 'SELECT author, comment, rating, post_date FROM reviews';
+		const {results} = await ctx.env.MY_DB.prepare(query)
+			.all()
+		return ctx.json(results);
+	} catch (err) {
+		console.error(err);
+		return ctx.json({ error: (err instanceof Error ? err.message : true) }, 500);
+	}
+  })
+  .post('/reviews', async (ctx) => {
+	try {
+	    const { author, comment, rating } = await ctx.req.json();
+		const query = 'INSERT INTO reviews (author, comment, rating, post_date) VALUES (?, ?, ?, ?) RETURNING *'
+		const postDate = (new Date()).toLocaleDateString();
+		const newReview = await ctx.env.MY_DB.prepare(query)
+			.bind(author, comment, rating, postDate)
+			.first<ReviewRow>();
+		return ctx.json(newReview);
+	} catch (err) {
+		console.error(err);
+		return ctx.json({ error: (err instanceof Error ? err.message : true) }, 500);
+	}
+  });
 
-	},
-} satisfies ExportedHandler<Env>;
+const app = new Hono();
+app.route('/api', api);
+
+export default app;
