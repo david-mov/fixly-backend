@@ -29,6 +29,11 @@ api
   });
 
 const app = new Hono();
+
 app.route('/api', api);
+
+app.all('*', async (ctx) => {
+	return ctx.json({error: 'Not found'}, 404);
+});
 
 export default app;
