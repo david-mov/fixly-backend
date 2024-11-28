@@ -43,7 +43,7 @@ enabled = true
 # Bind a D1 database. D1 is Cloudflare’s native serverless SQL database.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#d1-databases
 [[d1_databases]]
-binding = "MY_DB"
+binding = "DB"
 database_name = "fixly-db"
 database_id = "4dbd0130-417f-426f-9721-cc9cbcb0324e"
 
