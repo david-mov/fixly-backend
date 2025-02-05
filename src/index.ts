@@ -1,14 +1,30 @@
+import 'dotenv/config';
 import { Hono } from 'hono';
 import { createError } from './utils';
+import {cors} from 'hono/cors';
+import {logger} from 'hono/logger';
+import process from 'node:process';
 
 const api = new Hono<{ Bindings: Env }>();
+
+api.use(logger());
+api.use(cors({
+	origin: process.env.FRONTEND_URL || '*',
+	allowMethods: ['GET', 'POST']
+}));
 
 api.get('/reviews', async (ctx) => {
 	try {
 		const query = 'SELECT author, comment, rating, post_date FROM reviews';
 		const {results} = await ctx.env.DB.prepare(query)
 			.all()
-		return ctx.json(results);
+		const formattedResults = results.map(r => {
+			r.postDate = r.post_date;
+			delete r.post_date;
+			return r;
+		}
+		)
+		return ctx.json(formattedResults);
 	} catch (err) {
 		console.error(err);
 		return ctx.json({ error: (err instanceof Error ? err.message : true) }, 500);
